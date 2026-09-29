@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f7a4b">
+  <meta name="description" content="Dashboard transparansi perhitungan suara Pemilihan Kepala Pekon Panggungrejo Utara.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="./assets/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Hitung Suara — Panggungrejo Utara</title>
+</head>
+<body>
+  <div id="app-loader" class="loader"><div class="loader-card"><span class="spinner"></span><span>Memuat aplikasi…</span></div></div>
+
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">PU</div>
+        <div>
+          <div class="eyebrow">TRANSPARANSI HASIL</div>
+          <div class="brand-title">Panggungrejo Utara</div>
+        </div>
+      </div>
+      <div class="connection-pill" id="connection-pill"><span class="dot"></span><span id="connection-text">Menyiapkan…</span></div>
+    </div>
+  </header>
+
+  <main class="container page">
+    <section class="hero card">
+      <div class="hero-copy">
+        <div class="badge" id="event-status">PERHITUNGAN BERLANGSUNG</div>
+        <h1 id="event-title">Pemilihan Kepala Pekon</h1>
+        <p id="event-subtitle">Panggungrejo Utara • Hasil diperbarui secara realtime.</p>
+        <div class="updated">Terakhir diperbarui: <strong id="last-updated">—</strong></div>
+      </div>
+      <div class="hero-side">
+        <div class="hero-kicker">TOTAL PEMILIH</div>
+        <div class="hero-number" id="total-voters">1.500</div>
+        <div class="hero-note">pemilih terdaftar</div>
+      </div>
+    </section>
+
+    <div id="mode-banner" class="mode-banner hidden"></div>
+
+    <section class="stats-grid">
+      <article class="stat-card card"><div class="stat-icon">👥</div><div><div class="stat-label">Suara Masuk</div><div class="stat-value" id="votes-in">0</div></div></article>
+      <article class="stat-card card"><div class="stat-icon">✓</div><div><div class="stat-label">Suara Sah</div><div class="stat-value" id="valid-votes">0</div></div></article>
+      <article class="stat-card card"><div class="stat-icon">△</div><div><div class="stat-label">Suara Rusak / Tidak Sah</div><div class="stat-value" id="invalid-votes">0</div></div></article>
+      <article class="stat-card card"><div class="stat-icon">%</div><div><div class="stat-label">Partisipasi</div><div class="stat-value" id="participation">0%</div></div></article>
+    </section>
+
+    <section class="participation card">
+      <div class="section-heading inline"><div><h2>Progress Partisipasi</h2><p>Suara masuk dibandingkan total pemilih terdaftar.</p></div><strong id="participation-label">0 / 1.500</strong></div>
+      <div class="progress-track"><div class="progress-fill" id="participation-fill" style="width:0%"></div></div>
+      <div class="progress-note"><span>0%</span><span>100%</span></div>
+    </section>
+
+    <section class="results-layout">
+      <div class="results-panel card">
+        <div class="section-heading"><h2>Perolehan Suara</h2><p>Perbandingan 4 kandidat berdasarkan suara sah.</p></div>
+        <div id="candidate-results" class="candidate-results"></div>
+      </div>
+      <div class="chart-panel card">
+        <div class="section-heading"><h2>Grafik Suara</h2><p>Grafik bar berubah otomatis ketika rekap diperbarui.</p></div>
+        <div class="chart-wrap"><canvas id="vote-chart" aria-label="Grafik perolehan suara kandidat"></canvas></div>
+        <div class="chart-legend" id="chart-legend"></div>
+      </div>
+    </section>
+
+    <section class="transparency-grid">
+      <article class="card info-card">
+        <div class="section-heading"><h2>Ringkasan Perhitungan</h2></div>
+        <div class="formula"><span>Suara masuk</span><b>=</b><span>Suara sah + suara rusak/tidak sah</span></div>
+        <div class="formula"><span>Suara sah</span><b>=</b><span>Total suara kandidat 1–4</span></div>
+        <div class="formula"><span>Partisipasi</span><b>=</b><span>Suara masuk ÷ total pemilih × 100%</span></div>
+      </article>
+      <article class="card info-card">
+        <div class="section-heading"><h2>Status Penghitungan</h2></div>
+        <p id="public-note">Angka di halaman publik mengikuti rekap yang tersimpan pada database.</p>
+        <div class="status-box" id="public-status-box">Status: terbuka untuk input</div>
+      </article>
+    </section>
+
+    <section id="admin-section" class="admin-shell card hidden">
+      <div class="admin-head">
+        <div><div class="badge admin-badge">SUPERADMIN</div><h2>Panel Perhitungan</h2><p>Setiap perubahan akan diterapkan secara atomik dan terlihat realtime pada dashboard warga.</p></div>
+        <button class="btn ghost" id="logout-btn">Keluar</button>
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-card">
+          <h3>Kontrol Cepat Suara</h3>
+          <p class="muted">Tombol +1 dan −1 untuk koreksi cepat. Semua perubahan dihitung terhadap total pemilih.</p>
+          <div id="quick-counters" class="quick-counters"></div>
+        </div>
+
+        <div class="admin-card">
+          <h3>Tambah Banyak Suara</h3>
+          <div class="input-row"><input id="batch-amount" type="number" min="1" max="1500" inputmode="numeric" value="1" aria-label="Jumlah suara"><select id="batch-type" aria-label="Kategori suara"><option value="candidate1">Kandidat 1</option><option value="candidate2">Kandidat 2</option><option value="candidate3">Kandidat 3</option><option value="candidate4">Kandidat 4</option><option value="invalid">Rusak / Tidak Sah</option></select><button class="btn primary" id="add-votes-btn">Tambahkan</button></div>
+          <div class="quick-grid"><button class="quick-btn" data-delta="1">+1</button><button class="quick-btn" data-delta="5">+5</button><button class="quick-btn" data-delta="10">+10</button><button class="quick-btn" data-delta="25">+25</button></div>
+        </div>
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-card">
+          <h3>Setelan Penghitungan</h3>
+          <div class="field"><label for="setting-voters">Total pemilih</label><input id="setting-voters" type="number" min="1" max="100000" inputmode="numeric"></div>
+          <div class="field"><label for="setting-title">Judul acara</label><input id="setting-title" type="text" maxlength="100"></div>
+          <div class="field"><label for="setting-subtitle">Subjudul</label><input id="setting-subtitle" type="text" maxlength="160"></div>
+          <div class="admin-actions"><button class="btn primary" id="save-settings-btn">Simpan setelan</button><button class="btn warn" id="lock-btn">Kunci penghitungan</button></div>
+        </div>
+        <div class="admin-card correction-card">
+          <div class="correction-head"><div><h3>Koreksi Terarah</h3><p class="muted">Untuk kesalahan input yang perlu diberi alasan.</p></div><span class="warning-chip">AUDIT</span></div>
+          <div class="field"><label for="correction-type">Kategori</label><select id="correction-type"><option value="candidate1">Kandidat 1</option><option value="candidate2">Kandidat 2</option><option value="candidate3">Kandidat 3</option><option value="candidate4">Kandidat 4</option><option value="invalid">Rusak / Tidak Sah</option></select></div>
+          <div class="input-row"><input id="correction-delta" type="number" min="-1500" max="1500" inputmode="numeric" placeholder="+/- jumlah"><input id="correction-reason" type="text" maxlength="180" placeholder="Alasan koreksi"><button class="btn dark" id="apply-correction-btn">Terapkan</button></div>
+        </div>
+      </div>
+
+      <div class="audit-wrap admin-card"><div class="section-heading inline"><div><h3>Aktivitas Terakhir</h3><p class="muted">Catatan operator terbaru.</p></div><span class="live-chip">LIVE</span></div><div id="audit-list" class="audit-list"></div></div>
+    </section>
+
+    <section class="admin-login card" id="admin-login-section">
+      <div class="login-copy"><div class="admin-login-mark">🔐</div><div><h2>Akses Superadmin</h2><p>Warga cukup melihat dashboard. Hanya akun superadmin yang dapat memasukkan atau mengoreksi rekap.</p></div></div>
+      <form id="login-form" class="login-form" autocomplete="on"><input id="login-username" name="username" type="text" minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" placeholder="Username" autocomplete="username" required><input id="login-password" name="password" type="password" minlength="6" placeholder="Password" autocomplete="current-password" required><button class="btn primary" type="submit">Login</button></form>
+      <div class="login-message" id="login-message" role="status"></div>
+    </section>
+
+    <footer class="footer"><span>© <span id="year"></span> Panggungrejo Utara</span><span>Transparansi • Realtime • PWA</span></footer>
+  </main>
+
+  <script src="./firebase-config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
