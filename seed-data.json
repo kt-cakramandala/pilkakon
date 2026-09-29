@@ -1,0 +1,17 @@
+{
+  "config": {
+    "eventTitle": "Pemilihan Kepala Pekon Panggungrejo Utara",
+    "eventSubtitle": "Hasil sementara diperbarui secara realtime.",
+    "totalVoters": 1500,
+    "status": "OPEN",
+    "electionDate": ""
+  },
+  "candidates": {
+    "candidate1": { "number": 1, "name": "Kandidat 1", "photoUrl": "assets/kandidat-1.svg", "accent": "#1f8a70" },
+    "candidate2": { "number": 2, "name": "Kandidat 2", "photoUrl": "assets/kandidat-2.svg", "accent": "#3d6dcc" },
+    "candidate3": { "number": 3, "name": "Kandidat 3", "photoUrl": "assets/kandidat-3.svg", "accent": "#d08a2e" },
+    "candidate4": { "number": 4, "name": "Kandidat 4", "photoUrl": "assets/kandidat-4.svg", "accent": "#9a4f92" }
+  },
+  "tally": { "candidate1": 0, "candidate2": 0, "candidate3": 0, "candidate4": 0, "invalid": 0, "lastUpdatedAt": 0 },
+  "_note": "Hapus _note bila Anda memakai JSON ini sebagai import database. Set admins/{uid}/role=superadmin secara manual setelah membuat akun Auth."
+}

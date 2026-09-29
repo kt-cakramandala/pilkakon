@@ -1,0 +1,33 @@
+{
+  "rules": {
+    "config": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'superadmin'",
+      ".validate": "newData.hasChildren(['totalVoters','eventTitle','eventSubtitle','status']) && newData.child('totalVoters').isNumber() && newData.child('totalVoters').val() > 0 && (newData.child('status').val() === 'OPEN' || newData.child('status').val() === 'LOCKED')"
+    },
+    "candidates": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'superadmin'"
+    },
+    "tally": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'superadmin'",
+      ".validate": "newData.hasChildren(['candidate1','candidate2','candidate3','candidate4','invalid','lastUpdatedAt']) && newData.child('candidate1').isNumber() && newData.child('candidate2').isNumber() && newData.child('candidate3').isNumber() && newData.child('candidate4').isNumber() && newData.child('invalid').isNumber() && newData.child('candidate1').val() >= 0 && newData.child('candidate2').val() >= 0 && newData.child('candidate3').val() >= 0 && newData.child('candidate4').val() >= 0 && newData.child('invalid').val() >= 0 && (newData.child('candidate1').val() + newData.child('candidate2').val() + newData.child('candidate3').val() + newData.child('candidate4').val() + newData.child('invalid').val()) <= root.child('config').child('totalVoters').val()"
+    },
+    "audit": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'superadmin'",
+      "$auditId": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'superadmin'"
+      }
+    },
+    "presence": {
+      "$uid": { ".read": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'superadmin'", ".write": "auth != null && auth.uid === $uid" }
+    },
+    "admins": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('role').val() === 'superadmin'"
+      }
+    }
+  }
+}
