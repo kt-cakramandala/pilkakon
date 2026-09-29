@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Count Pilkades Pekon Panggungrejo Utara</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e3a8a">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3214/3214083.png">
+</head>
+<body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col pb-16">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/10 p-2 rounded-lg">
+                    <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold leading-tight">Pilkades Panggungrejo Utara</h1>
+                    <p class="text-xs text-blue-200">Perhitungan Suara Realtime Pemilihan Kepala Pekon</p>
+                </div>
+            </div>
+            <div id="authActions">
+                <button id="btnLoginModal" class="bg-yellow-500 hover:bg-yellow-400 text-blue-950 px-4 py-2 rounded-lg text-xs md:text-sm font-bold shadow transition flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                    Login Admin
+                </button>
+                <button id="btnLogout" class="hidden bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-xs md:text-sm font-bold shadow transition">
+                    Keluar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="max-w-5xl mx-auto px-4 py-6 flex-grow w-full">
+        <!-- Status Indicator -->
+        <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl shadow-sm border border-slate-200 mb-6 text-xs md:text-sm">
+            <div class="flex items-center gap-2">
+                <span id="statusPing" class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span id="statusText" class="font-semibold text-slate-700">Sistem Realtime Aktif</span>
+            </div>
+            <span id="lastUpdated" class="text-slate-400 font-mono text-xs">Diperbarui: -</span>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Total DPT</p>
+                <h2 class="text-2xl md:text-3xl font-black text-slate-800">1.500</h2>
+                <p class="text-[11px] text-slate-500 mt-1">Daftar Pemilih Tetap</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600">
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Suara Masuk</p>
+                <h2 id="totalMasuk" class="text-2xl md:text-3xl font-black text-blue-600">0</h2>
+                <p id="persenMasuk" class="text-[11px] text-blue-600 font-semibold mt-1">0.0% dari DPT</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-600">
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Suara Sah</p>
+                <h2 id="totalSah" class="text-2xl md:text-3xl font-black text-emerald-600">0</h2>
+                <p id="persenSah" class="text-[11px] text-emerald-600 font-semibold mt-1">0.0% dari Suara Masuk</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-rose-600">
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Tidak Sah / Rusak</p>
+                <h2 id="totalRusak" class="text-2xl md:text-3xl font-black text-rose-600">0</h2>
+                <p id="persenRusak" class="text-[11px] text-rose-600 font-semibold mt-1">0.0% dari Suara Masuk</p>
+            </div>
+        </div>
+
+        <!-- Progress Bar Partisipasi -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+            <div class="flex justify-between items-center mb-2 text-xs md:text-sm font-bold">
+                <span class="text-slate-700">Progres Suara Masuk</span>
+                <span id="progressBarText" class="text-blue-600">0 / 1500 (0%)</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="progressBarFill" class="bg-blue-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-4">
+                <h3 class="text-base md:text-lg font-bold text-slate-800">Perolehan Suara Calon Kepala Pekon</h3>
+                <span class="text-xs bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-full border border-blue-200">4 Kandidat Calon</span>
+            </div>
+            <div class="relative w-full min-h-[250px] md:min-h-[320px]">
+                <canvas id="voteChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Grid Detail Kandidat -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="candidateCards">
+            <!-- Calon 1 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center">01</span>
+                        <span id="c1-persen" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">0%</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-sm md:text-base">Calon No. Urut 1</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Kandidat 1</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-baseline">
+                    <span class="text-xs text-slate-400 font-medium">Perolehan:</span>
+                    <span id="c1-votes" class="text-xl font-black text-slate-800">0 <span class="text-xs font-normal text-slate-500">suara</span></span>
+                </div>
+            </div>
+
+            <!-- Calon 2 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-sm flex items-center justify-center">02</span>
+                        <span id="c2-persen" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">0%</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-sm md:text-base">Calon No. Urut 2</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Kandidat 2</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-baseline">
+                    <span class="text-xs text-slate-400 font-medium">Perolehan:</span>
+                    <span id="c2-votes" class="text-xl font-black text-slate-800">0 <span class="text-xs font-normal text-slate-500">suara</span></span>
+                </div>
+            </div>
+
+            <!-- Calon 3 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="w-8 h-8 rounded-full bg-purple-600 text-white font-bold text-sm flex items-center justify-center">03</span>
+                        <span id="c3-persen" class="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">0%</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-sm md:text-base">Calon No. Urut 3</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Kandidat 3</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-baseline">
+                    <span class="text-xs text-slate-400 font-medium">Perolehan:</span>
+                    <span id="c3-votes" class="text-xl font-black text-slate-800">0 <span class="text-xs font-normal text-slate-500">suara</span></span>
+                </div>
+            </div>
+
+            <!-- Calon 4 -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="w-8 h-8 rounded-full bg-orange-600 text-white font-bold text-sm flex items-center justify-center">04</span>
+                        <span id="c4-persen" class="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">0%</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-sm md:text-base">Calon No. Urut 4</h4>
+                    <p class="text-xs text-slate-500 mt-0.5">Kandidat 4</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-baseline">
+                    <span class="text-xs text-slate-400 font-medium">Perolehan:</span>
+                    <span id="c4-votes" class="text-xl font-black text-slate-800">0 <span class="text-xs font-normal text-slate-500">suara</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Superadmin Panel -->
+        <div id="adminPanel" class="hidden bg-amber-50 border-2 border-amber-300 p-5 md:p-6 rounded-xl shadow-md transition-all">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-amber-200">
+                <div class="flex items-center gap-2">
+                    <span class="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-md uppercase">Superadmin</span>
+                    <h3 class="font-bold text-amber-900 text-base md:text-lg">Panel Input Hitung Suara TPS</h3>
+                </div>
+                <span class="text-xs text-amber-700 font-medium hidden md:inline">Akses Terotentikasi</span>
+            </div>
+
+            <p class="text-xs text-amber-800 mb-4">Klik tombol di bawah ini setiap kali ada surat suara sah untuk calon atau surat suara rusak/tidak sah.</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+                <button id="btnC1" class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white p-3.5 rounded-xl font-bold shadow-sm transition flex flex-col items-center justify-center">
+                    <span class="text-xs font-normal opacity-90">Tambah Suara</span>
+                    <span class="text-base">+ Calon 1</span>
+                </button>
+                <button id="btnC2" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white p-3.5 rounded-xl font-bold shadow-sm transition flex flex-col items-center justify-center">
+                    <span class="text-xs font-normal opacity-90">Tambah Suara</span>
+                    <span class="text-base">+ Calon 2</span>
+                </button>
+                <button id="btnC3" class="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white p-3.5 rounded-xl font-bold shadow-sm transition flex flex-col items-center justify-center">
+                    <span class="text-xs font-normal opacity-90">Tambah Suara</span>
+                    <span class="text-base">+ Calon 3</span>
+                </button>
+                <button id="btnC4" class="bg-orange-600 hover:bg-orange-700 active:scale-95 text-white p-3.5 rounded-xl font-bold shadow-sm transition flex flex-col items-center justify-center">
+                    <span class="text-xs font-normal opacity-90">Tambah Suara</span>
+                    <span class="text-base">+ Calon 4</span>
+                </button>
+                <button id="btnRusak" class="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white p-3.5 rounded-xl font-bold shadow-sm transition flex flex-col items-center justify-center col-span-2 sm:col-span-1">
+                    <span class="text-xs font-normal opacity-90">Tambah Suara</span>
+                    <span class="text-base">+ Suara Rusak</span>
+                </button>
+            </div>
+
+            <!-- Tombol Pengurang (Koreksi) & Reset -->
+            <div class="pt-3 border-t border-amber-200 flex flex-wrap items-center justify-between gap-2">
+                <span class="text-xs text-amber-800 font-semibold">Mode Koreksi Data:</span>
+                <div class="flex flex-wrap gap-2">
+                    <button id="btnDecC1" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs px-2.5 py-1.5 rounded font-bold transition">- C1</button>
+                    <button id="btnDecC2" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs px-2.5 py-1.5 rounded font-bold transition">- C2</button>
+                    <button id="btnDecC3" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs px-2.5 py-1.5 rounded font-bold transition">- C3</button>
+                    <button id="btnDecC4" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs px-2.5 py-1.5 rounded font-bold transition">- C4</button>
+                    <button id="btnDecRusak" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs px-2.5 py-1.5 rounded font-bold transition">- Rusak</button>
+                    <button id="btnReset" class="bg-red-100 hover:bg-red-200 text-red-700 text-xs px-3 py-1.5 rounded font-bold transition ml-2">Reset All</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Login -->
+    <div id="loginModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-100">
+            <div class="bg-blue-900 text-white p-5 text-center">
+                <h3 class="text-lg font-bold">Login Superadmin</h3>
+                <p class="text-xs text-blue-200 mt-1">Sistem Perhitungan Pekon Panggungrejo Utara</p>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Username</label>
+                    <input type="text" id="username" placeholder="Masukkan username" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Password</label>
+                    <input type="password" id="password" placeholder="Masukkan password" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                </div>
+                <div id="loginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 p-2.5 rounded-lg text-center font-semibold">
+                    Username atau password salah!
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button id="closeModal" class="w-1/2 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">Batal</button>
+                    <button id="submitLogin" class="w-1/2 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg transition shadow">Login Admin</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
+        <p>&copy; 2026 Pekon Panggungrejo Utara, Sukoharjo, Pringsewu. All rights reserved.</p>
+    </footer>
+
+    <!-- Main JS Module -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
