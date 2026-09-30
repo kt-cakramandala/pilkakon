@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1f3a">
+  <meta name="description" content="Live count realtime Pemilihan Kepala Pekon Panggungrejo Utara.">
+  <meta name="color-scheme" content="light">
+  <title>Live Count Pilkades Panggungrejo Utara</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+  <script src="config.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="appShell">
+    <header class="topbar">
+      <div class="container topbar-inner">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">✓</div>
+          <div>
+            <div class="brand-title">Pilkades Panggungrejo Utara</div>
+            <div class="brand-subtitle">Live Count Pemilihan Kepala Pekon · <span id="electionYearLabel">2026</span></div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div id="publicSyncBadge" class="pill pill-light"><span class="dot dot-amber"></span><span>Memuat…</span></div>
+          <button id="btnLoginModal" class="btn btn-primary-light">Login Superadmin</button>
+          <button id="btnLogout" class="btn btn-danger hidden">Keluar</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container main-content">
+      <section class="hero-card">
+        <div class="hero-copy">
+          <div class="eyebrow">HASIL PERHITUNGAN SUARA</div>
+          <h1>Perolehan Suara Secara Terbuka &amp; Realtime</h1>
+          <p>Data suara ditampilkan otomatis dari basis data Firebase. Publik tidak memerlukan login.</p>
+        </div>
+        <div class="hero-status">
+          <div class="status-line"><span id="statusPing" class="status-dot status-dot-amber"></span><span id="statusText">Menghubungkan ke server…</span></div>
+          <div id="lastUpdated" class="muted">Pembaruan: –</div>
+          <button id="btnManualRefresh" class="btn btn-secondary btn-small">↻ Perbarui</button>
+        </div>
+      </section>
+
+      <section class="metric-grid">
+        <article class="metric-card">
+          <div class="metric-label">Total DPT</div>
+          <div class="metric-value" id="totalDpt">1.500</div>
+          <div class="metric-help">Daftar Pemilih Tetap</div>
+        </article>
+        <article class="metric-card accent-blue">
+          <div class="metric-label">Suara Masuk</div>
+          <div class="metric-value" id="totalMasuk">0</div>
+          <div class="metric-help" id="persenMasuk">0,0% dari DPT</div>
+        </article>
+        <article class="metric-card accent-green">
+          <div class="metric-label">Suara Sah</div>
+          <div class="metric-value" id="totalSah">0</div>
+          <div class="metric-help" id="persenSah">0,0% dari suara masuk</div>
+        </article>
+        <article class="metric-card accent-rose">
+          <div class="metric-label">Tidak Sah / Rusak</div>
+          <div class="metric-value" id="totalRusak">0</div>
+          <div class="metric-help" id="persenRusak">0,0% dari suara masuk</div>
+        </article>
+      </section>
+
+      <section class="progress-card">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">PARTISIPASI</div>
+            <h2>Progres suara masuk</h2>
+          </div>
+          <strong id="progressBarText">0 / 1.500 (0%)</strong>
+        </div>
+        <div class="progress-track"><div id="progressBarFill" class="progress-fill" style="width:0%"></div></div>
+        <div class="progress-foot"><span id="progressLeft">Masih tersedia 1.500 suara DPT</span><span id="progressState">Belum dimulai</span></div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="section-head section-head-wrap">
+          <div>
+            <div class="section-kicker">LIVE COUNT</div>
+            <h2>Perolehan suara kandidat</h2>
+          </div>
+          <span class="tag tag-blue">4 Kandidat</span>
+        </div>
+        <div class="chart-wrap"><canvas id="voteChart" aria-label="Grafik perolehan suara kandidat"></canvas></div>
+      </section>
+
+      <section id="candidateCards" class="candidate-grid"></section>
+
+      <section id="adminPanel" class="admin-panel hidden">
+        <div class="admin-header">
+          <div>
+            <div class="eyebrow eyebrow-gold">PANEL SUPERADMIN</div>
+            <h2>Input, koreksi, pengaturan &amp; export</h2>
+            <p>Panel ini hanya terlihat setelah autentikasi Firebase berhasil.</p>
+          </div>
+          <span id="adminIdentity" class="pill pill-gold">Terautentikasi</span>
+        </div>
+
+        <div class="admin-grid">
+          <section class="admin-card admin-card-wide">
+            <div class="admin-card-head"><div><h3>Hitung suara cepat</h3><p>Setiap klik menggunakan atomic increment di Firebase.</p></div><span class="tag tag-amber">INPUT</span></div>
+            <div class="vote-actions">
+              <button id="btnC1" class="vote-btn c1"><span>+</span><b>Calon 1</b><small>Tambah 1 suara</small></button>
+              <button id="btnC2" class="vote-btn c2"><span>+</span><b>Calon 2</b><small>Tambah 1 suara</small></button>
+              <button id="btnC3" class="vote-btn c3"><span>+</span><b>Calon 3</b><small>Tambah 1 suara</small></button>
+              <button id="btnC4" class="vote-btn c4"><span>+</span><b>Calon 4</b><small>Tambah 1 suara</small></button>
+              <button id="btnRusak" class="vote-btn rusak"><span>+</span><b>Rusak / Tidak Sah</b><small>Tambah 1 suara</small></button>
+            </div>
+            <div class="correction-row">
+              <span>Mode koreksi</span>
+              <button id="btnDecC1" class="btn btn-secondary btn-small">− C1</button>
+              <button id="btnDecC2" class="btn btn-secondary btn-small">− C2</button>
+              <button id="btnDecC3" class="btn btn-secondary btn-small">− C3</button>
+              <button id="btnDecC4" class="btn btn-secondary btn-small">− C4</button>
+              <button id="btnDecRusak" class="btn btn-secondary btn-small">− Rusak</button>
+              <button id="btnReset" class="btn btn-danger-outline btn-small">Reset Semua</button>
+            </div>
+          </section>
+
+          <section class="admin-card">
+            <div class="admin-card-head"><div><h3>Total DPT</h3><p>Diubah langsung ke konfigurasi hasil.</p></div><span class="tag tag-purple">PENGATURAN</span></div>
+            <label class="field-label" for="dptInput">Jumlah DPT</label>
+            <input id="dptInput" class="field-input" type="number" min="1" max="1000000" step="1" inputmode="numeric">
+            <button id="btnSaveDpt" class="btn btn-primary full">Simpan DPT</button>
+          </section>
+
+          <section class="admin-card admin-card-wide">
+            <div class="admin-card-head"><div><h3>Profil kandidat</h3><p>Upload foto profil masing-masing calon dan ubah nama tampilannya.</p></div><span class="tag tag-green">PROFIL</span></div>
+            <div id="candidateAdminGrid" class="candidate-admin-grid"></div>
+          </section>
+
+          <section class="admin-card admin-card-wide">
+            <div class="admin-card-head"><div><h3>Export hasil pemilihan</h3><p>File dibuat di perangkat Anda; tidak mengirim file ke server.</p></div><span class="tag tag-blue">LAPORAN</span></div>
+            <div class="export-grid">
+              <button id="btnExportExcel" class="export-btn"><span class="export-icon">X</span><div><b>Export Excel</b><small>.xlsx · tabel hasil lengkap</small></div></button>
+              <button id="btnExportPdf" class="export-btn"><span class="export-icon">PDF</span><div><b>Export PDF</b><small>.pdf · format siap cetak</small></div></button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>© <span id="footerYear">2026</span> Pekon Panggungrejo Utara</span>
+        <span>Realtime vote board · Firebase Realtime Database</span>
+      </div>
+    </footer>
+  </div>
+
+  <div id="loginModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal-card">
+      <div class="modal-head"><div class="brand-mark small">✓</div><div><h2 id="loginTitle">Login Superadmin</h2><p>Kelola input suara, DPT, profil kandidat &amp; laporan.</p></div></div>
+      <div class="modal-body">
+        <label class="field-label" for="username">Username / Email</label>
+        <input id="username" class="field-input" type="text" autocomplete="username" placeholder="admin">
+        <label class="field-label" for="password">Password</label>
+        <input id="password" class="field-input" type="password" autocomplete="current-password" placeholder="••••••••">
+        <div id="loginError" class="alert alert-error hidden"></div>
+        <div class="modal-actions"><button id="closeModal" class="btn btn-secondary">Batal</button><button id="submitLogin" class="btn btn-primary">Login</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+  <div id="busyOverlay" class="busy-overlay hidden"><div class="spinner"></div><div id="busyText">Memproses…</div></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
